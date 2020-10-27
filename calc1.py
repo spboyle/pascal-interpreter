@@ -7,6 +7,22 @@ PLUS, MINUS, TIMES, DIVIDE =  'PLUS', 'MINUS', 'TIMES', 'DIVIDE'
 EOF = 'EOF'
 
 
+precedence_map = {
+    'PLUS': 1,
+    'MINUS': 1,
+    'TIMES': 2,
+    'DIVIDE': 2,
+}
+
+
+def precedence(operator_token):
+    try:
+        return precedence_map[operator_token.token_type]
+    except KeyError:
+        print("Precedence not found for {}".format(operator_token.token_type))
+        return -1
+
+
 class Token():
     def __init__(self, token_type, value):
         self.token_type = token_type
@@ -66,86 +82,65 @@ class Interpreter():
         else:
             self.error()
 
+    @staticmethod
+    def peek(stack):
+        try:
+            return stack[-1]
+        except IndexError:
+            return None
+
     def expr(self):
         self.current_token = self.get_next_token()
 
-        operand_stack = []
-        left = self.current_token
+        stack = [self.current_token]
         self.eat(INTEGER)
 
-        operand_stack.append(left)
         while self.current_token.token_type != EOF:
-            if self.current_token.token_type == TIMES:
-                if not operand_stack:
-                    self.error()
-                self.eat(TIMES)
-                left_operand = operand_stack.pop()
-                right_operand = self.current_token
+            # If current_token is an operand,
+            # Look ahead at the following operation (advance current_token)
+            # and look at the operation on the stack if present
+            # to decide whether to crunch the numbers of this term or save them for later
+            if self.current_token.token_type == INTEGER:
+                current_operand = self.current_token
                 self.eat(INTEGER)
-                operand_stack.append(Token(INTEGER, left_operand.value * right_operand.value))
-            elif self.current_token.token_type == DIVIDE:
-                if not operand_stack:
-                    self.error()
-                self.eat(DIVIDE)
-                left_operand = operand_stack.pop()
-                right_operand = self.current_token
-                self.eat(INTEGER)
-                operand_stack.append(Token(INTEGER, left_operand.value / right_operand.value))
+                if (operator := self.peek(stack)):
+                    if precedence(operator) >= precedence(self.current_token):
+                        stack.append(self.crunch(stack.pop(), stack.pop(), current_operand))
+                    else:
+                        stack.append(current_operand)
+            else:
+                stack.append(self.current_token)
+                self.eat(self.current_token.token_type)
 
-            elif self.current_token.token_type == PLUS:
-                if not operand_stack:
-                    self.error()
-                self.eat(PLUS)
-                left_operand = operand_stack.pop()
-                right_operand = self.current_token
-                self.eat(INTEGER)
-                # If next token has higher precedence, save current operation on the stack
-                if self.current_token.token_type in [TIMES, DIVIDE]:
-                    operand_stack.append(left_operand)
-                    operand_stack.append(Token(PLUS, '+'))
-                    operand_stack.append(right_operand)
-                else:
-                    operand_stack.append(Token(INTEGER, left_operand.value + right_operand.value))
+        # Everything has been reduced to terms and Plus / Minus
+        # Since it was put on a stack, the left-most operations are on the bottom
+        # Reverse the stack and pull everything out
+        # Probably so many ways to do this?
+        stack.reverse()
+        while len(stack) > 2:
+            left, operator, right = stack.pop(), stack.pop(), stack.pop()
+            stack.append(self.crunch(operator, left, right))
 
-            elif self.current_token.token_type == MINUS:
-                if not operand_stack:
-                    self.error()
-                self.eat(MINUS)
-                left_operand = operand_stack.pop()
-                right_operand = self.current_token
-                self.eat(INTEGER)
-                # If next token has higher precedence, save current operation on the stack
-                if self.current_token.token_type in [TIMES, DIVIDE]:
-                    operand_stack.append(left_operand)
-                    operand_stack.append(Token(MINUS, '-'))
-                    operand_stack.append(right_operand)
-                else:
-                    operand_stack.append(Token(INTEGER, left_operand.value - right_operand.value))
-
-        while len(operand_stack) > 2:
-            right = operand_stack.pop()
-            operator = operand_stack.pop()
-            left = operand_stack.pop()
-
-            if operator.token_type == PLUS:
-                operand_stack.append(Token(INTEGER, left.value + right.value))
-            elif operator.token_type == MINUS:
-                operand_stack.append(Token(INTEGER, left.value - right.value))
-
-        if operand_stack:
-            result = operand_stack.pop().value
+        if stack:
+            result = stack.pop().value
         else:
             self.error('There should be a token on the stack')
 
         return result
 
+    def crunch(self, operator, left, right):
+        if operator.token_type == PLUS:
+            return Token(INTEGER, left.value + right.value)
+        elif operator.token_type == MINUS:
+            return Token(INTEGER, left.value - right.value)
+        elif operator.token_type == TIMES:
+            return Token(INTEGER, left.value * right.value)
+        elif operator.token_type == DIVIDE:
+            return Token(INTEGER, left.value / right.value)
+
 
 def main():
-    while True:
-        try:
-            text = input('calc> ')
-        except EOFError:
-            break
+    while not (text := input('calc> ')).startswith('exit'):
         if not text:
             continue
         interpreter = Interpreter(text)
