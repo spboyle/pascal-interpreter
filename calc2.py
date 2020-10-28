@@ -44,7 +44,7 @@ class Interpreter():
     def __init__(self, text):
         self.text = text
         self.pos = 0
-        self.current_token = None
+        self.current_token = self.get_next_token()
 
     def error(self, msg='Error parsing input'):
         raise Exception(msg)
@@ -94,50 +94,24 @@ class Interpreter():
         except IndexError:
             return None
 
-    def expr(self):
-        self.current_token = self.get_next_token()
-
-        stack = [self.current_token]
+    def term(self):
+        token = self.current_token
         self.eat(INTEGER)
+        return token.value
+
+    def expr(self):
+
+        result = self.term()
 
         while self.current_token.token_type in (PLUS, MINUS):
             if self.current_token.token_type == PLUS:
                 self.eat(PLUS)
-                self.eat(INTEGER)
-                if (operator := self.peek(stack)):
-                    if precedence(operator) >= precedence(self.current_token):
-                        stack.append(self.crunch(stack.pop(), stack.pop(), current_operand))
-                    else:
-                        stack.append(current_operand)
-            else:
-                stack.append(self.current_token)
-                self.eat(self.current_token.token_type)
-        debug(stack)
-        # Everything has been reduced to terms and Plus / Minus
-        # Since it was put on a stack, the left-most operations are on the bottom
-        # Reverse the stack and pull everything out
-        # Probably so many ways to do this?
-        stack.reverse()
-        while len(stack) > 2:
-            left, operator, right = stack.pop(), stack.pop(), stack.pop()
-            stack.append(self.crunch(operator, left, right))
-
-        if stack:
-            result = stack.pop().value
-        else:
-            self.error('There should be a token on the stack')
+                result += self.term()
+            elif self.current_token.token_type == MINUS:
+                self.eat(MINUS)
+                result -= self.term()
 
         return result
-
-    def crunch(self, operator, left, right):
-        if operator.token_type == PLUS:
-            return Token(INTEGER, left.value + right.value)
-        elif operator.token_type == MINUS:
-            return Token(INTEGER, left.value - right.value)
-        elif operator.token_type == TIMES:
-            return Token(INTEGER, left.value * right.value)
-        elif operator.token_type == DIVIDE:
-            return Token(INTEGER, left.value / right.value)
 
 
 def main():
