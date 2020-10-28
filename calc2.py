@@ -100,14 +100,9 @@ class Interpreter():
         stack = [self.current_token]
         self.eat(INTEGER)
 
-        while self.current_token.token_type != EOF:
-            # If current_token is an operand,
-            # Look ahead at the following operation (advance current_token)
-            # and look at the operation on the stack if present
-            # to decide whether to crunch the numbers of this term or save them for later
-            debug(stack)
-            if self.current_token.token_type == INTEGER:
-                current_operand = self.current_token
+        while self.current_token.token_type in (PLUS, MINUS):
+            if self.current_token.token_type == PLUS:
+                self.eat(PLUS)
                 self.eat(INTEGER)
                 if (operator := self.peek(stack)):
                     if precedence(operator) >= precedence(self.current_token):
@@ -146,7 +141,7 @@ class Interpreter():
 
 
 def main():
-    while not (text := input('calc1> ')).startswith('exit'):
+    while not (text := input('calc2> ')).startswith('exit'):
         if not text:
             continue
         interpreter = Interpreter(text)
