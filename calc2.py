@@ -79,13 +79,13 @@ class Interpreter():
         elif current_char == '/':
             return Token(DIVIDE, current_char)
 
-        self.error()
+        self.error('Unexpected character {}'.format(current_char))
 
     def eat(self, token_type):
         if self.current_token.token_type == token_type:
             self.current_token = self.get_next_token()
         else:
-            self.error()
+            self.error('Expected token type {}, got {}'.format(token_type, self.current_token.token_type))
 
     @staticmethod
     def peek(stack):
@@ -94,13 +94,25 @@ class Interpreter():
         except IndexError:
             return None
 
-    def term(self):
+    def number(self):
         token = self.current_token
         self.eat(INTEGER)
         return token.value
 
-    def expr(self):
+    def term(self):
+        result = self.number()
 
+        while self.current_token.token_type in (TIMES, DIVIDE):
+            if self.current_token.token_type == TIMES:
+                self.eat(TIMES)
+                result *= self.number()
+            elif self.current_token.token_type == DIVIDE:
+                self.eat(DIVIDE)
+                result /= self.number()
+
+        return result
+
+    def expr(self):
         result = self.term()
 
         while self.current_token.token_type in (PLUS, MINUS):
