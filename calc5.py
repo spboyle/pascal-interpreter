@@ -20,6 +20,13 @@ operations = {
 }
 
 
+class Node:
+    def __init__(self, value, left=None, right=None):
+        self.value = value
+        self.left = left
+        self.right = right
+
+
 class Scanner:
     def __init__(self, text):
         self.text = text
@@ -46,7 +53,7 @@ class Scanner:
         return Token(NUMBER, float(result))
 
     def get_next_token(self):
-        while self.current_char == ' ':
+        while self.current_char.isspace():
             self.advance()
 
         if self.current_char == '':
@@ -78,10 +85,10 @@ class Parser:
         while self.current_token.type in [PLUS, MINUS]:
             if self.current_token.type == PLUS:
                 self.eat(PLUS)
-                result += self.term()
+                result = Node('+', result, self.term())
             else:
                 self.eat(MINUS)
-                result -= self.term()
+                result = Node('-', result, self.term())
 
         return result
 
@@ -91,16 +98,16 @@ class Parser:
         while self.current_token.type in [TIMES, DIVIDE]:
             if self.current_token.type == TIMES:
                 self.eat(TIMES)
-                result *= self.factor()
+                result = Node('*', result, self.factor())
             else:
                 self.eat(DIVIDE)
-                result /= self.factor()
+                result = Node('/', result, self.factor())
 
         return result
 
     def factor(self):
         if self.current_token.type == NUMBER:
-            result = self.current_token.value
+            result = Node(self.current_token.value)
             self.eat(NUMBER)
         elif self.current_token.type == LPAREN:
             self.eat(LPAREN)
@@ -109,6 +116,26 @@ class Parser:
         else:
             raise Exception('Expected NUMBER or LPAREN, got {}'.format(self.current_token.type))
         return result
+
+
+class Interpreter:
+    operations = {
+        '+': lambda x, y: x + y,
+        '-': lambda x, y: x - y,
+        '*': lambda x, y: x * y,
+        '/': lambda x, y: x / y,
+    }
+    def __init__(self, ast):
+        self.ast = ast
+
+    def evaluate(self):
+        return self.crunch_tree(self.ast)
+
+    def crunch_tree(self, node):
+        if node.value in self.operations:
+            return self.operations[node.value](self.crunch_tree(node.left), self.crunch_tree(node.right))
+        else:
+            return node.value
 
 
 if __name__ == '__main__':
@@ -120,6 +147,10 @@ if __name__ == '__main__':
             #     tokens.append(token.value)
             # print(tokens)
             parser = Parser(Scanner(text))
-            print(parser.expr())
+            tree = parser.expr()
+
+            interpreter = Interpreter(tree)
+            print(interpreter.evaluate())
+
         except Exception as e:
             traceback.print_exc()
