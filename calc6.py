@@ -79,7 +79,7 @@ class Parser:
     """
     expr : term ((PLUS|MINUS)term)*
     term : factor ((TIMES|DIVIDE)factor)*
-    factor : INTEGER | LPAREN expr RPAREN
+    factor : (PLUS|MINUS)factor | LPAREN expr RPAREN)
     """
 
     def __init__(self, tokens):
@@ -125,7 +125,15 @@ class Parser:
         return result
 
     def factor(self):
-        if self.current_token.type == NUMBER:
+        if self.current_token.type in [PLUS, MINUS]:
+            if self.current_token.type == PLUS:
+                self.eat(PLUS)
+                result = Node('+', self.factor())
+            else:
+                self.eat(MINUS)
+                result = Node('-', self.factor())
+
+        elif self.current_token.type == NUMBER:
             result = Node(self.current_token.value)
             self.eat(NUMBER)
         elif self.current_token.type == LPAREN:
@@ -136,8 +144,6 @@ class Parser:
             raise TypeError('Expected NUMBER or LPAREN, got {}'.format(self.current_token.type))
 
         return result
-
-
 
 
 class Interpreter:
@@ -156,7 +162,10 @@ class Interpreter:
 
     def crunch(self, node):
         if node.value in operations:
-            return self.operations[node.value](self.crunch(node.left), self.crunch(node.right))
+            if node.right:
+                return self.operations[node.value](self.crunch(node.left), self.crunch(node.right))
+            else:
+                return self.operations[node.value](0, self.crunch(node.left))
         else:
             return node.value
 
@@ -164,9 +173,10 @@ class Interpreter:
 if __name__ == '__main__':
     while not (text := input('calc6> ')).startswith('exit'):
         try:
-            tokens = list(Lexer(text).tokenize())
-            print(tokens)
-            parser = Parser(iter(tokens))
+            tokens = Lexer(text).tokenize()
+            token_list = list(tokens)
+            print(token_list)
+            parser = Parser(iter(token_list))
             interpreter = Interpreter(parser.parse())
             print(interpreter.interpret())
         except:

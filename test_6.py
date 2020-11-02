@@ -81,6 +81,45 @@ class TestInterpreter6(unittest.TestCase):
         interpreter = Interpreter6(parser.parse())
         self.assertEqual(interpreter.interpret(), 22)
 
+    def test_unary_1(self):
+        """
+        - 3 =>  -3
+        """
+        text = '- 3'
+        parser = Parser(Lexer(text).tokenize())
+        interpreter = Interpreter6(parser.parse())
+        self.assertEqual(interpreter.interpret(), -3)
+
+
+    def test_unary_2(self):
+        """
+        + 3 =>  3
+        """
+        text = '+ 3'
+        parser = Parser(Lexer(text).tokenize())
+        interpreter = Interpreter6(parser.parse())
+        self.assertEqual(interpreter.interpret(), 3)
+
+
+    def test_unary_3(self):
+        """
+        5 - - - + - 3 =>  8
+        """
+        text = '5 - - - + - 3'
+        parser = Parser(Lexer(text).tokenize())
+        interpreter = Interpreter6(parser.parse())
+        self.assertEqual(interpreter.interpret(), 8)
+
+
+    def test_unary_4(self):
+        """
+        5 - - - + - (3 + 4) - +2 =>  10
+        """
+        text = '5 - - - + - (3 + 4) - +2'
+        parser = Parser(Lexer(text).tokenize())
+        interpreter = Interpreter6(parser.parse())
+        self.assertEqual(interpreter.interpret(), 10)
+
     # def test_to_postfix(self):
     #     """
     #     7 + 3 * (10 / (12 / (3 + 1) - 1)) => 7 3 10 12 3 1 + / 1 - / * +'
