@@ -138,6 +138,52 @@ class Interpreter:
             return node.value
 
 
+class Postfixer:
+    """
+    Converts math AST into postfix
+    """
+    operations = ('+', '*', '-', '/')
+
+    def __init__(self, ast):
+        self.ast = ast
+
+    def evaluate(self):
+        return self.to_postfix(self.ast)
+
+    def to_postfix(self, node):
+        if node.value in self.operations:
+            string = "{} {} {}".format(self.to_postfix(node.left), self.to_postfix(node.right), node.value)
+        elif node.value.is_integer():
+            string = str(int(node.value))
+        else:
+            string = str(node.value)
+
+        return string
+
+
+class Lisper:
+    """
+    Converts math AST into prefix but includes parens to mimic lisp
+    """
+    operations = ('+', '*', '-', '/')
+
+    def __init__(self, ast):
+        self.ast = ast
+
+    def evaluate(self):
+        return self.to_lisp(self.ast)
+
+    def to_lisp(self, node):
+        if node.value in self.operations:
+            string = "({} {} {})".format(node.value, self.to_lisp(node.left), self.to_lisp(node.right))
+        elif node.value.is_integer():
+            string = str(int(node.value))
+        else:
+            string = str(node.value)
+
+        return string
+
+
 if __name__ == '__main__':
     while not (text:= input('calc5> ')).startswith('exit'):
         try:
