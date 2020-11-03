@@ -12,6 +12,9 @@ NUMBER, EOF, PLUS, MINUS, TIMES, DIVIDE, LPAREN, RPAREN = (
 )
 
 
+"""
+Lexical Analysis
+"""
 class Lexer:
     operations = {
         '+': Token(PLUS, '+'),
@@ -65,8 +68,12 @@ class Lexer:
             yield token
 
 
+"""
+Abstract Syntax Tree
+"""
 class AST:
     pass
+
 
 class BinaryOp(AST):
     def __init__(self, token, left, right):
@@ -74,16 +81,32 @@ class BinaryOp(AST):
         self.left = left
         self.right = right
 
+
 class UnaryOp(AST):
     def __init__(self, token, operand):
         self.token = token
         self.operand = operand
+
 
 class Number(AST):
     def __init__(self, token):
         self.token = token
 
 
+"""
+Syntax Analysis
+expr : term ((PLUS|MINUS)term)*
+term : factor ((TIMES|DIVIDE)factor)*
+factor : (PLUS|MINUS)factor | NUMBER | LPAREN expr RPAREN | variable
+
+program : compound_statement DOT
+compound_statement : BEGIN statement_list END
+statement_list : statement | statement SEMI statement_list
+statement : compound_statement | assignment_statement | empty
+assignment_statment : variable ASSIGN expr
+variable : ID
+empty :
+"""
 class Parser:
     def __init__(self, tokens):
         """tokens is a generator"""
@@ -156,6 +179,9 @@ class Parser:
         return result
 
 
+"""
+Visitor pattern, AST evaluation
+"""
 class Interpreter:
     binary_operations = {
         PLUS: operator.add,
