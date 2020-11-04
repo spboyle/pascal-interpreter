@@ -11,7 +11,7 @@ EOF = 'EOF'
 NUMBER, PLUS, MINUS, TIMES, DIVIDE, LPAREN, RPAREN = (
     'NUMBER', 'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'LPAREN', 'RPAREN',
 )
-ASSIGN, VARIABLE, SEMICOLON, BEGIN, END = 'ASSIGN', 'VARIABLE', 'SEMICOLON', 'BEGIN', 'END'
+ASSIGN, VARIABLE, SEMICOLON, DOT, BEGIN, END = 'ASSIGN', 'VARIABLE', 'SEMICOLON', 'DOT', 'BEGIN', 'END'
 
 RESERVED_WORDS = {
     BEGIN,
@@ -32,6 +32,7 @@ class Lexer:
     end_of_file = Token(EOF, None)
     assignment_token = Token(ASSIGN, ':=')
     semicolon = Token(SEMICOLON, ';')
+    dot = Token(DOT, '.')
 
     reserved_words = {
         BEGIN: Token(BEGIN, BEGIN),
@@ -99,6 +100,9 @@ class Lexer:
         elif self.current_char == ';':
             self.advance()
             return self.semicolon
+        elif self.current_char == '.':
+            self.advance()
+            return self.dot
         elif (identifier := self.identifier()):
             return identifier
         elif (number := self.number()):
@@ -141,6 +145,20 @@ class UnaryOp(AST):
 class Number(AST):
     def __init__(self, token):
         self.token = token
+        self.value = self.token.value
+
+class Assign(BinaryOp):
+    pass
+
+class Var(Number):
+    pass
+
+class NoOp(AST):
+    pass
+
+class Compound(AST):
+    def __init__(self, children=None):
+        self.children = children or []
 
 
 """
@@ -228,11 +246,48 @@ class Parser:
         elif self.current_token.type == NUMBER:
             result = Number(self.current_token)
             self.eat(NUMBER)
-        # else:
-        #     raise TypeError(f'Expected one of (PLUS, MINUS, LPAREN, NUMBER), got {self.current_token.type}')
+        else:
+            raise TypeError(f'Expected one of (PLUS, MINUS, LPAREN, NUMBER), got {self.current_token.type}')
 
         return result
 
+    def program(self):
+        result = self.compound_statement()
+        self.eat(DOT)
+        return result
+
+    def compound_statement(self):
+        self.eat(BEGIN)
+        result = Compound(self.statement_list())
+        self.eat(END)
+        return result
+
+    def statement_list(self):
+        result = [self.statement()]
+        if self.current_token.type == SEMI:
+            self.eat(SEMI)
+            result.extend(self.statement_list())
+        return result
+
+    def statement(self):
+        if self.current_token.type == BEGIN:
+            result = self.compound_statement()
+        elif self.current_token.type == VARIABLE:
+            result = self.assignment_statment()
+        else:
+            result = NoOp()
+        return result
+
+    def assignment_statement(self):
+        var = self.variable()
+        assignment_op = self.current_token
+        self.eat(ASSIGN)
+        return Assign(assignment_op, var, self.expr())
+
+    def variable(self):
+        var = Variable(self.current_token)
+        self.eat(VARIABLE)
+        return var
 
 """
 Visitor pattern, AST evaluation
