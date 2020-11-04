@@ -3,15 +3,20 @@
 
 from collections import namedtuple
 import operator
+import string
 import traceback
 
-
 Token = namedtuple('Token', ('type', 'value'))
-NUMBER, EOF, PLUS, MINUS, TIMES, DIVIDE, LPAREN, RPAREN = (
-    'NUMBER', 'EOF', 'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'LPAREN', 'RPAREN',
+EOF = 'EOF'
+NUMBER, PLUS, MINUS, TIMES, DIVIDE, LPAREN, RPAREN = (
+    'NUMBER', 'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'LPAREN', 'RPAREN',
 )
+ASSIGN, VARIABLE, SEMICOLON, BEGIN, END = 'ASSIGN', 'VARIABLE', 'SEMICOLON', 'BEGIN', 'END'
 
-
+RESERVED_WORDS = {
+    BEGIN,
+    END
+}
 """
 Lexical Analysis
 """
@@ -25,6 +30,15 @@ class Lexer:
         ')': Token(RPAREN, ')'),
     }
     end_of_file = Token(EOF, None)
+    assignment_token = Token(ASSIGN, ':=')
+    semicolon = Token(SEMICOLON, ';')
+
+    reserved_words = {
+        BEGIN: Token(BEGIN, BEGIN),
+        END: Token(END, END),
+    }
+
+    acceptable_var_chars = string.ascii_letters + string.digits + '_'
 
     def __init__(self, text):
         self.text = text
@@ -41,6 +55,33 @@ class Lexer:
         except IndexError:
             self.current_char = ''
 
+    def peek(self):
+        try:
+            return self.text[self.pos + 1]
+        except IndexError:
+            return ''
+
+    def _id(self):
+        result = ''
+        if self.current_char in string.ascii_letters:
+            while self.current_char and self.current_char in self.acceptable_var_chars:
+                result += self.current_char
+                self.advance()
+        return result
+
+    def identifier(self):
+        identifier = self._id()
+        if identifier:
+            return self.reserved_words.get(identifier, Token(VARIABLE, identifier))
+
+    def assignment(self):
+        if self.current_char == ':':
+            self.advance()
+            if self.current_char == '=':
+                token = ':='
+                self.advance()
+                return token
+
     def number(self):
         result = ''
         decimal_found = self.current_char == '.'
@@ -53,14 +94,23 @@ class Lexer:
     def get_next_token(self):
         while self.current_char.isspace():
             self.advance()
-        if (number := self.number()):
+        if self.current_char == '':
+            return self.end_of_file
+        elif self.current_char == ';':
+            self.advance()
+            return self.semicolon
+        elif (identifier := self.identifier()):
+            return identifier
+        elif (number := self.number()):
             return Token(NUMBER, number)
+        elif (assignment := self.assignment()):
+            return self.assignment_token
         elif self.current_char in self.operations:
             token = self.operations[self.current_char]
             self.advance()
             return token
         else:
-            return self.end_of_file
+            raise ValueError(f'Unexpected character {self.current_char}')
 
     def tokenize(self):
         self.reset()
@@ -95,17 +145,22 @@ class Number(AST):
 
 """
 Syntax Analysis
-expr : term ((PLUS|MINUS)term)*
-term : factor ((TIMES|DIVIDE)factor)*
-factor : (PLUS|MINUS)factor | NUMBER | LPAREN expr RPAREN | variable
-
-program : compound_statement DOT
-compound_statement : BEGIN statement_list END
-statement_list : statement | statement SEMI statement_list
-statement : compound_statement | assignment_statement | empty
-assignment_statment : variable ASSIGN expr
-variable : ID
-empty :
+program                 : compound_statement DOT
+compound_statement      : BEGIN statement_list END
+statement_list          : statement
+                        | statement SEMI statement_list
+statement               : compound_statement
+                        | assignment_statement
+                        | empty
+assignment_statment     : variable ASSIGN expr
+variable                : ID
+expr                    : term ((PLUS|MINUS)term)*
+term                    : factor ((TIMES|DIVIDE)factor)*
+factor                  : (PLUS|MINUS)factor
+                        |  NUMBER
+                        | LPAREN expr RPAREN
+                        | variable
+empty                   :
 """
 class Parser:
     def __init__(self, tokens):
