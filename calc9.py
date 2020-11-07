@@ -147,14 +147,18 @@ class Number(AST):
         self.token = token
         self.value = self.token.value
 
-class Assign(BinaryOp):
+
+class Assignment(BinaryOp):
     pass
 
-class Var(Number):
+
+class Variable(Number):
     pass
+
 
 class NoOp(AST):
     pass
+
 
 class Compound(AST):
     def __init__(self, children=None):
@@ -195,6 +199,9 @@ class Parser:
             self.get_next_token()
         else:
             raise TypeError(f'Expected {type}, got {self.current_token.type}')
+
+    def parse_program(self):
+        return self.program()
 
     def parse(self):
         return self.expr()
@@ -264,8 +271,8 @@ class Parser:
 
     def statement_list(self):
         result = [self.statement()]
-        if self.current_token.type == SEMI:
-            self.eat(SEMI)
+        if self.current_token.type == SEMICOLON:
+            self.eat(SEMICOLON)
             result.extend(self.statement_list())
         return result
 
@@ -273,7 +280,7 @@ class Parser:
         if self.current_token.type == BEGIN:
             result = self.compound_statement()
         elif self.current_token.type == VARIABLE:
-            result = self.assignment_statment()
+            result = self.assignment_statement()
         else:
             result = NoOp()
         return result
@@ -282,7 +289,7 @@ class Parser:
         var = self.variable()
         assignment_op = self.current_token
         self.eat(ASSIGN)
-        return Assign(assignment_op, var, self.expr())
+        return Assignment(assignment_op, var, self.expr())
 
     def variable(self):
         var = Variable(self.current_token)
@@ -307,6 +314,7 @@ class Interpreter:
 
     def __init__(self, ast):
         self.ast = ast
+        self.table = {}
 
     def interpret(self):
         return self.visit(self.ast)
@@ -325,6 +333,24 @@ class Interpreter:
             return int(node.token.value)
         except ValueError:
             return float(node.token.value)
+
+    def visit_compound(self, node):
+        for child in node.children:
+            self.visit(child)
+
+        print(f'Result: {self.table}')
+        return self.table
+
+    def visit_assignment(self, node):
+        print(f'Assigning {node.left.value} = {node.right.value}')
+        self.table[self.visit(node.left)] = self.visit(node.right)
+        return node.right.value
+
+    def visit_variable(self, node):
+        return node.value
+
+    def visit_noop(self, node):
+        pass
 
 
 if __name__ == '__main__':
