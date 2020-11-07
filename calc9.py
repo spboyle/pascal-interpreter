@@ -8,15 +8,13 @@ import traceback
 
 Token = namedtuple('Token', ('type', 'value'))
 EOF = 'EOF'
-NUMBER, PLUS, MINUS, TIMES, DIVIDE, LPAREN, RPAREN = (
-    'NUMBER', 'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'LPAREN', 'RPAREN',
+NUMBER, PLUS, MINUS, TIMES, DIVIDE, INTEGER_DIVIDE, LPAREN, RPAREN = (
+    'NUMBER', 'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'INTEGER_DIVIDE',  'LPAREN', 'RPAREN',
 )
-ASSIGN, VARIABLE, SEMICOLON, DOT, BEGIN, END = 'ASSIGN', 'VARIABLE', 'SEMICOLON', 'DOT', 'BEGIN', 'END'
+ASSIGN, VARIABLE, SEMICOLON, DOT = 'ASSIGN', 'VARIABLE', 'SEMICOLON', 'DOT'
+# Pascal is case-insensitive so reserved words are lower-case
+BEGIN, END, DIV = 'begin', 'end', 'div'
 
-RESERVED_WORDS = {
-    BEGIN,
-    END
-}
 """
 Lexical Analysis
 """
@@ -37,6 +35,7 @@ class Lexer:
     reserved_words = {
         BEGIN: Token(BEGIN, BEGIN),
         END: Token(END, END),
+        DIV: Token(INTEGER_DIVIDE, DIV)
     }
 
     acceptable_var_chars = string.ascii_letters + string.digits + '_'
@@ -71,7 +70,7 @@ class Lexer:
         return result
 
     def identifier(self):
-        identifier = self._id()
+        identifier = self._id().lower()
         if identifier:
             return self.reserved_words.get(identifier, Token(VARIABLE, identifier))
 
@@ -224,16 +223,19 @@ class Parser:
     def term(self):
         result = self.factor()
 
-        while self.current_token.type in (TIMES, DIVIDE):
+        while self.current_token.type in (TIMES, DIVIDE, INTEGER_DIVIDE):
             if self.current_token.type == TIMES:
                 token = self.current_token
                 self.eat(TIMES)
                 result = BinaryOp(token, result, self.factor())
-            else:
+            elif self.current_token.type == DIVIDE:
                 token = self.current_token
                 self.eat(DIVIDE)
                 result = BinaryOp(token, result, self.factor())
-
+            else:
+                token = self.current_token
+                self.eat(INTEGER_DIVIDE)
+                result = BinaryOp(token, result, self.factor())
         return result
 
     def factor(self):
@@ -253,6 +255,8 @@ class Parser:
         elif self.current_token.type == NUMBER:
             result = Number(self.current_token)
             self.eat(NUMBER)
+        elif self.current_token.type == VARIABLE:
+            result = self.variable()
         else:
             raise TypeError(f'Expected one of (PLUS, MINUS, LPAREN, NUMBER), got {self.current_token.type}')
 
@@ -305,6 +309,7 @@ class Interpreter:
         MINUS: operator.sub,
         TIMES: operator.mul,
         DIVIDE: operator.truediv,
+        INTEGER_DIVIDE: operator.floordiv,
     }
 
     unary_operations = {
@@ -342,12 +347,17 @@ class Interpreter:
         return self.table
 
     def visit_assignment(self, node):
-        print(f'Assigning {node.left.value} = {node.right.value}')
-        self.table[self.visit(node.left)] = self.visit(node.right)
-        return node.right.value
+        var_value = node.left.value
+        expr_value = self.visit(node.right)
+        print(f'Assigning {var_value} = {expr_value}')
+        self.table[var_value] = expr_value
+        return expr_value
 
     def visit_variable(self, node):
-        return node.value
+        try:
+            return self.table[node.value]
+        except KeyError:
+            raise NameError(f'{node.value} is not defined')
 
     def visit_noop(self, node):
         pass

@@ -24,9 +24,9 @@ class TestInterpreter(unittest.TestCase):
 
     def test_mixed_expr_3(self):
         """
-        6 - 8*3 + 19/5 + 85 / 17 - 3*4 ==> -21.2
+        6 - 8*3 + 19 div 5 + 85 div 17 - 3*4 ==> -21.2
         """
-        text = '6 - 8*3 + 19/5 + 85 / 17 - 3*4'
+        text = '6 - 8*3 + 19/5 + 85 div 17 - 3*4'
         interpreter = Interpreter(Parser(Lexer(text).tokenize()).parse())
         self.assertEqual(interpreter.interpret(), -21.2)
 
@@ -40,17 +40,17 @@ class TestInterpreter(unittest.TestCase):
 
     def test_repeated_divide(self):
         """
-        3600 / 12 / 3 / 25 ==> 4
+        3600 div 12 div 3 div 25 ==> 4
         """
-        text = '3600 / 12 / 3 / 25'
+        text = '3600 div 12 div 3 div 25'
         interpreter = Interpreter(Parser(Lexer(text).tokenize()).parse())
         self.assertEqual(interpreter.interpret(), 4)
 
     def test_mixed_multiply_divide(self):
         """
-        3600 / 12 * 3 / 25 * 2 / 100 ==> .72
+        3600 div 12 * 3 div 25 * 2 / 100 ==> .72
         """
-        text = '3600 / 12 * 3 / 25 * 2 / 100'
+        text = '3600 div 12 * 3 div 25 * 2 / 100'
         interpreter = Interpreter(Parser(Lexer(text).tokenize()).parse())
         self.assertEqual(interpreter.interpret(), .72)
 
@@ -64,18 +64,18 @@ class TestInterpreter(unittest.TestCase):
 
     def test_parens(self):
         """
-        36 - (12 + 3) - (25 + 2) / 9  ==> 18
+        36 - (12 + 3) - (25 + 2) div 9  ==> 18
         """
-        text = '36 - (12 + 3) - (25 + 2) / 9'
+        text = '36 - (12 + 3) - (25 + 2) div 9'
         parser = Parser(Lexer(text).tokenize())
         interpreter = Interpreter(parser.parse())
         self.assertEqual(interpreter.interpret(), 18)
 
     def test_parens_2(self):
         """
-        7 + 3 * (10 / (12 / (3 + 1) - 1))  ==> 22
+        7 + 3 * (10 div (12 div (3 + 1) - 1))  ==> 22
         """
-        text = '7 + 3 * (10 / (12 / (3 + 1) - 1))'
+        text = '7 + 3 * (10 div (12 div (3 + 1) - 1))'
         parser = Parser(Lexer(text).tokenize())
         interpreter = Interpreter(parser.parse())
         self.assertEqual(interpreter.interpret(), 22)
@@ -121,6 +121,38 @@ class TestInterpreter(unittest.TestCase):
         parser = Parser(Lexer(text).tokenize())
         interpreter = Interpreter(parser.parse_program())
         self.assertEqual({'a': 5, 'x': 11}, interpreter.interpret())
+
+    def test_program_with_var_manipulation(self):
+        text = """
+        BEGIN
+            BEGIN
+                number := 2;
+                a := number;
+                b := 10 * a + 10 * number div 4;
+                c := a - - b
+            END;
+            x := 11;
+        END.
+        """
+        parser = Parser(Lexer(text).tokenize())
+        interpreter = Interpreter(parser.parse_program())
+        self.assertEqual({'number': 2, 'a': 2, 'b': 25, 'c': 27, 'x': 11}, interpreter.interpret())
+
+    def test_program_case_insensitive(self):
+        text = """
+        Begin
+            BeGiN
+                NUMBER := 2;
+                A := nuMBer;
+                b := 10 * a + 10 * NUmbEr div 4;
+                c := a - - B
+            end;
+            x := 11;
+        END.
+        """
+        parser = Parser(Lexer(text).tokenize())
+        interpreter = Interpreter(parser.parse_program())
+        self.assertEqual({'number': 2, 'a': 2, 'b': 25, 'c': 27, 'x': 11}, interpreter.interpret())
 
 if __name__ == '__main__':
     unittest.main()
