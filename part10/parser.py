@@ -9,9 +9,9 @@ from ast import (
 from constants import (
     PLUS, MINUS, TIMES, DIVIDE, INTEGER_DIVIDE, LPAREN, RPAREN,
     NUMBER, VARIABLE, ASSIGN,
-    SEMICOLON, BEGIN, END, DOT
+    SEMICOLON, BEGIN, END, DOT, DIV
 )
-
+from lexer import Lexer
 
 """
 Syntax Analysis
@@ -40,7 +40,7 @@ class Parser:
         self.get_next_token()
 
     def get_next_token(self):
-        self.current_token = next(self.tokens)
+        self.current_token = next(self.tokens, Lexer.end_of_file)
 
     def eat(self, type):
         if type == self.current_token.type:

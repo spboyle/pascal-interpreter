@@ -1,7 +1,16 @@
 #!/usr/bin/env python
 
+import operator
 
-from ast import *
+from ast import (
+    BinaryOp, UnaryOp, NoOp,
+    Number, Assignment, Variable,
+    Compound
+)
+from constants import (
+    PLUS, MINUS, TIMES, DIVIDE, INTEGER_DIVIDE,
+)
+
 
 """
 Visitor pattern, AST evaluation
@@ -28,7 +37,7 @@ class Interpreter:
         return self.visit(self.ast)
 
     def visit(self, node):
-        return getattr(self, f'visit_{type(node).__name__.lower()}')(node)
+        return getattr(self, f'visit_{node.name}')(node)
 
     def visit_binaryop(self, node):
         return self.binary_operations[node.token.type](self.visit(node.left), self.visit(node.right))

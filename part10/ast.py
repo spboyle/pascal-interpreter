@@ -4,7 +4,9 @@
 Abstract Syntax Tree
 """
 class AST:
-    pass
+    @property
+    def name(self):
+        return type(self).__name__.lower()
 
 
 class BinaryOp(AST):

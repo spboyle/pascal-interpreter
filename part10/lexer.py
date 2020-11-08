@@ -5,8 +5,8 @@ import string
 
 from constants import (
     PLUS, MINUS, TIMES, DIVIDE, INTEGER_DIVIDE, LPAREN, RPAREN,
-    NUMBER, VARIABLE, ASSIGN
-    SEMICOLON, BEGIN, END, DOT
+    NUMBER, VARIABLE, ASSIGN,
+    SEMICOLON, BEGIN, END, DOT, DIV, EOF,
 )
 
 Token = namedtuple('Token', ('type', 'value'))
@@ -86,33 +86,49 @@ class Lexer:
             result += self.current_char
             self.advance()
 
-        return Token(NUMBER, result)
+        return Token(NUMBER, result) if result else None
 
     def get_next_token(self):
-        while self.current_char.isspace():
-            self.advance()
-        if self.current_char == '':
-            return self.end_of_file
-        elif self.current_char == ';':
-            self.advance()
-            return self.semicolon
-        elif self.current_char == '.':
-            self.advance()
-            return self.dot
-        elif (identifier := self.identifier()):
-            return identifier
-        elif (number := self.number()):
-            return number
-        elif (assignment := self.assignment()):
-            return self.assignment_token
-        elif self.current_char in self.operations:
-            token = self.operations[self.current_char]
-            self.advance()
-            return token
-        else:
-            raise ValueError(f'Unexpected character {self.current_char}')
+        while self.current_char:
+            # Skip spaces
+            if self.current_char.isspace():
+                self.advance()
+
+            # Skip comments
+            elif self.current_char == '{':
+                while self.current_char and self.current_char != '}':
+                    self.advance()
+                self.advance()
+
+            # End of statement
+            elif self.current_char == ';':
+                self.advance()
+                return self.semicolon
+            # End of program
+            elif self.current_char == '.':
+                self.advance()
+                return self.dot
+
+            # multi-char tokens which advance self.current_char
+            elif (identifier := self.identifier()):
+                return identifier
+            elif (number := self.number()):
+                return number
+            elif (assignment := self.assignment()):
+                return self.assignment_token
+
+            # Single-char operations like + - * /
+            elif self.current_char in self.operations:
+                token = self.operations[self.current_char]
+                self.advance()
+                return token
+            else:
+                raise ValueError(f'Unexpected character {self.current_char}')
+
+        # End of file
+        return self.end_of_file
 
     def tokenize(self):
         self.reset()
-        while True:
-            yield self.get_next_token()
+        while (token := self.get_next_token()).type != EOF:
+            yield token

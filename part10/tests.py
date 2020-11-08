@@ -1,8 +1,69 @@
 #!/usr/bin/env python
 import unittest
 
-from calc9 import Parser, Lexer
-from calc9 import Interpreter
+from lexer import Lexer
+from interpreter import Interpreter
+from parser import Parser
+
+
+class TestLexer(unittest.TestCase):
+    def test_basic_addition(self):
+        string = "2+3"
+        lexer = Lexer(string)
+        tokens = [token.value for token in lexer.tokenize()]
+        self.assertEqual(['2', '+', '3'], tokens)
+
+    def test_surrounding_space(self):
+        string = ' 2 + 3 '
+        lexer = Lexer(string)
+        tokens = [token.value for token in lexer.tokenize()]
+        self.assertEqual(['2', '+', '3'], tokens)
+
+    def test_all_chars(self):
+        string = ' 2.9 + (3 - 4) * 5 / 10 '
+        lexer = Lexer(string)
+        tokens = [token.value for token in lexer.tokenize()]
+        self.assertEqual(['2.9', '+', '(', '3', '-', '4', ')', '*', '5', '/', '10'], tokens)
+
+    def test_var(self):
+        string = 'a'
+        lexer = Lexer(string)
+        tokens = [token.value for token in lexer.tokenize()]
+        self.assertEqual(['a'], tokens)
+
+    def test_assignment_and_variable(self):
+        string = 'a := 4'
+        lexer = Lexer(string)
+        tokens = [token.value for token in lexer.tokenize()]
+        self.assertEqual(['a', ':=', '4'], tokens)
+
+    def test_assignment_and_variable_with_semicolon(self):
+        string = 'a := 4'
+        lexer = Lexer(string)
+        tokens = [token.value for token in lexer.tokenize()]
+        self.assertEqual(['a', ':=', '4'], tokens)
+
+    def test_empty_program(self):
+        string = 'BEGIN END'
+        lexer = Lexer(string)
+        tokens = [token.value for token in lexer.tokenize()]
+        self.assertEqual(['begin', 'end'], tokens)
+
+    def test_program_with_statements(self):
+        string = 'BEGIN a := 5; x := 11 END'
+        lexer = Lexer(string)
+        tokens = [token.value for token in lexer.tokenize()]
+        self.assertEqual(['begin', 'a', ':=', '5', ';', 'x', ':=', '11', 'end'], tokens)
+
+    def test_program_with_comments(self):
+        """
+        Ignores all characters in {comments}
+        """
+        string = 'BEGIN a := 5; {hi ∞} x := 11 END'
+        lexer = Lexer(string)
+        tokens = [token.value for token in lexer.tokenize()]
+        self.assertEqual(['begin', 'a', ':=', '5', ';', 'x', ':=', '11', 'end'], tokens)
+
 
 class TestInterpreter(unittest.TestCase):
 
@@ -154,7 +215,6 @@ class TestInterpreter(unittest.TestCase):
         interpreter = Interpreter(parser.parse_program())
         self.assertEqual({'number': 2, 'a': 2, 'b': 25, 'c': 27, 'x': 11}, interpreter.interpret())
 
-
     def test_program_underscores_in_var_names(self):
         text = """
         Begin
@@ -170,6 +230,7 @@ class TestInterpreter(unittest.TestCase):
         parser = Parser(Lexer(text).tokenize())
         interpreter = Interpreter(parser.parse_program())
         self.assertEqual({'_number': 2, 'a': 2, 'b_b': 25, 'c': 27, 'x': 11}, interpreter.interpret())
+
 
 if __name__ == '__main__':
     unittest.main()
