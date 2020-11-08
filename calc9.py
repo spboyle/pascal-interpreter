@@ -38,7 +38,8 @@ class Lexer:
         DIV: Token(INTEGER_DIVIDE, DIV)
     }
 
-    acceptable_var_chars = string.ascii_letters + string.digits + '_'
+    acceptable_var_starters = string.ascii_letters + '_'
+    acceptable_var_chars = acceptable_var_starters + string.digits
 
     def __init__(self, text):
         self.text = text
@@ -63,7 +64,7 @@ class Lexer:
 
     def _id(self):
         result = ''
-        if self.current_char in string.ascii_letters:
+        if self.current_char in self.acceptable_var_starters:
             while self.current_char and self.current_char in self.acceptable_var_chars:
                 result += self.current_char
                 self.advance()
