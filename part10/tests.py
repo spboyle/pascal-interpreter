@@ -7,6 +7,7 @@ from parser import Parser
 
 
 class TestLexer(unittest.TestCase):
+    maxDiff=None
     def test_basic_addition(self):
         string = "2+3"
         lexer = Lexer(string)
@@ -63,6 +64,37 @@ class TestLexer(unittest.TestCase):
         lexer = Lexer(string)
         tokens = [token.value for token in lexer.tokenize()]
         self.assertEqual(['begin', 'a', ':=', '5', ';', 'x', ':=', '11', 'end'], tokens)
+
+    def test_big_program(self):
+        string = """PROGRAM Part10;
+        VAR
+           number     : INTEGER;
+           a, b, c, x : INTEGER;
+           y          : REAL;
+
+        BEGIN {Part10}
+           BEGIN
+              number := 2;
+              a := number;
+              b := 10 * a + 10 * number DIV 4;
+              c := a - - b
+           END;
+           x := 11;
+           y := 20 / 7 + 3.14;
+           { writeln('a = ', a); }
+           { writeln('b = ', b); }
+           { writeln('c = ', c); }
+           { writeln('number = ', number); }
+           { writeln('x = ', x); }
+           { writeln('y = ', y); }
+        END.  {Part10}
+        """
+        lexer = Lexer(string)
+        tokens = [token.value for token in lexer.tokenize()]
+        expected = ['program', 'part10', ';', 'var', 'number', ':', 'integer', ';', 'a', ',', 'b', ',', 'c', ',', 'x', ':', 'integer', ';', 'y', ':', 'real', ';', 'begin', 'begin', 'number', ':=', '2', ';', 'a', ':=', 'number', ';', 'b', ':=', '10', '*', 'a', '+', '10', '*', 'number', 'div', '4', ';', 'c', ':=', 'a', '-', '-', 'b', 'end', ';', 'x', ':=', '11', ';', 'y', ':=', '20', '/', '7', '+', '3.14', ';', 'end', '.']
+
+        self.assertEqual(expected, tokens)
+
 
 
 class TestInterpreter(unittest.TestCase):

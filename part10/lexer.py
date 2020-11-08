@@ -5,8 +5,8 @@ import string
 
 from constants import (
     PLUS, MINUS, TIMES, DIVIDE, INTEGER_DIVIDE, LPAREN, RPAREN,
-    NUMBER, VARIABLE, ASSIGN,
-    SEMICOLON, BEGIN, END, DOT, DIV, EOF,
+    NUMBER, VARIABLE, ASSIGN, VAR, INTEGER, REAL, PROGRAM,
+    SEMICOLON, BEGIN, END, DOT, DIV, EOF, COMMA, COLON,
 )
 
 Token = namedtuple('Token', ('type', 'value'))
@@ -27,11 +27,17 @@ class Lexer:
     assignment_token = Token(ASSIGN, ':=')
     semicolon = Token(SEMICOLON, ';')
     dot = Token(DOT, '.')
+    colon = Token(COLON, ':')
+    comma = Token(COMMA, ',')
 
     reserved_words = {
         BEGIN: Token(BEGIN, BEGIN),
         END: Token(END, END),
-        DIV: Token(INTEGER_DIVIDE, DIV)
+        DIV: Token(INTEGER_DIVIDE, DIV),
+        PROGRAM: Token(PROGRAM, PROGRAM),
+        VAR: Token(VAR, VAR),
+        INTEGER: Token(INTEGER, INTEGER),
+        REAL: Token(REAL, REAL),
     }
 
     acceptable_var_starters = string.ascii_letters + '_'
@@ -73,9 +79,10 @@ class Lexer:
 
     def assignment(self):
         if self.current_char == ':':
-            self.advance()
-            if self.current_char == '=':
+            if self.peek() == '=':
                 token = ':='
+                # Advance twice for two-char token
+                self.advance()
                 self.advance()
                 return token
 
@@ -100,15 +107,6 @@ class Lexer:
                     self.advance()
                 self.advance()
 
-            # End of statement
-            elif self.current_char == ';':
-                self.advance()
-                return self.semicolon
-            # End of program
-            elif self.current_char == '.':
-                self.advance()
-                return self.dot
-
             # multi-char tokens which advance self.current_char
             elif (identifier := self.identifier()):
                 return identifier
@@ -122,6 +120,22 @@ class Lexer:
                 token = self.operations[self.current_char]
                 self.advance()
                 return token
+
+            # End of statement
+            elif self.current_char == ':':
+                self.advance()
+                return self.colon
+            elif self.current_char == ',':
+                self.advance()
+                return self.comma
+            elif self.current_char == ';':
+                self.advance()
+                return self.semicolon
+            # End of program
+            elif self.current_char == '.':
+                self.advance()
+                return self.dot
+
             else:
                 raise ValueError(f'Unexpected character {self.current_char}')
 
