@@ -15,7 +15,12 @@ from lexer import Lexer
 
 """
 Syntax Analysis
-program                 : compound_statement DOT
+
+program                 : PROGRAM variable SEMI block DOT
+block                   : declarations compound_statement
+declarations            : VAR (variable_declaration SEMI)+ | empty
+variable_declaration    : variable (COMMA variable)* COLON variable_type
+variable_type           : INTEGER | REAL
 compound_statement      : BEGIN statement_list END
 statement_list          : statement
                         | statement SEMI statement_list
