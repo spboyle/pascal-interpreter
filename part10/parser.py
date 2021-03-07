@@ -17,6 +17,8 @@ from lexer import Lexer
 """
 Syntax Analysis
 
+Context-Free Grammar
+
 program                 : PROGRAM variable SEMI block DOT
 block                   : declarations compound_statement
 declarations            : VAR (variable_declaration SEMI)+ | empty
