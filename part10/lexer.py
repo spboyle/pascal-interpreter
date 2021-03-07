@@ -2,6 +2,7 @@
 
 from collections import namedtuple
 import string
+import logging
 
 from constants import (
     PLUS, MINUS, TIMES, DIVIDE, INTEGER_DIVIDE, LPAREN, RPAREN,
@@ -10,6 +11,7 @@ from constants import (
 )
 
 Token = namedtuple('Token', ('type', 'value'))
+
 
 """
 Lexical Analysis
@@ -75,6 +77,7 @@ class Lexer:
     def identifier(self):
         identifier = self._id().lower()
         if identifier:
+            logging.debug("* ID *: {}".format(identifier))
             return self.reserved_words.get(identifier, Token(VARIABLE, identifier))
 
     def assignment(self):

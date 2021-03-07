@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import logging
 
 from ast import (
     BinaryOp, UnaryOp, NoOp,
@@ -124,6 +125,7 @@ class Parser:
     def compound_statement(self):
         self.eat(BEGIN)
         result = Compound(self.statement_list())
+        logging.debug(self.current_token)
         self.eat(END)
         return result
 
@@ -147,6 +149,7 @@ class Parser:
         var = self.variable()
         assignment_op = self.current_token
         self.eat(ASSIGN)
+        logging.debug(assignment_op)
         return Assignment(assignment_op, var, self.expr())
 
     def variable(self):
