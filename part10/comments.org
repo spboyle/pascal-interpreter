@@ -1,0 +1,52 @@
+* Pascal Interpreter
+  https://ruslanspivak.com/lsbasi-part1/
+  Lexer + Parser + Interpreter
+* Lexer
+  Breaks string input into semantic 'tokens'
+  - Each token represents different meaning
+* Parser
+  Consumes a sequence of tokens
+  Understands relationship between tokens
+  - Dependencies
+  - Constraints
+  Enforces rules about the sequence of tokens
+  Context-free grammar
+  Generates Abstract Syntax Tree (AST)
+* Interpreter
+  Consumes AST
+  Decides what each node does
+  Has memory
+* writeln
+  Add constant
+  Add reserved word + token to Lexer
+  Add writeln as option to "statement" in parser
+  Parse writeln as node containing an expr in parens
+* Overall code
+  Pros:
+  - Very specific
+  - Encapsulation of responsibility
+  - Visitor patter in Interpreter
+    - De-coupling data from behavior -- strange or genius?
+  Cons:
+  - Very verbose
+  - Difficult to troubleshoot
+    - Parser needs ++robust
+* Tests
+  Pros:
+  - Test variety of features
+  Cons:
+  - Fewer unhappy paths
+  - Big "all the things" test
+    - Useful for fast prototyping
+    - Needs broken down into "units"
+  - Interpreter dependent on Parser dependent on Lexer
+    - To test interpreter, would want to create AST in test,
+      but this is contrary to how the code would be used
+    - Maybe Lexer -> Parser -> Interpreter integration tests are better
+      But still need to isolate behaviors, could be hard to target bugs across layers
+* Q & A
+  - What was your favorite part of this project to work on, and why?
+  - What was the most challenging technical problem you faced during development, and how did you solve it?
+  - Which pieces of code are you most proud of and least proud of?
+  - If you could start from scratch, would you do anything differently? Why?
+  - What did you learn from this project?
